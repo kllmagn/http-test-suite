@@ -1,0 +1,31 @@
+name: Test Servers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test_nginx:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image for nginx_server
+      run: docker build -t nginx_server -f nginx.Dockerfile .
+    - name: Run the Docker image for nginx_server
+      run: docker run -d --network=host nginx_server #-p 20001:3030 nginx_server
+    - name: Stress test nginx_server
+      run: ab -n 10000 -c 100 127.0.0.1:3030/httptest/wikipedia_russia.html
+
+  test_basic:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image for basic_server
+      run: docker build -t basic_server -f Dockerfile .
+    - name: Run the Docker image for basic_server in the background
+      run: docker run -d --network=host basic_server #-p 20000:8080 basic_server
+    - name: Functional test basic_server
+      run: |
+        sleep 5
+        ./httptest.py localhost 8080
+    - name: Stress test basic_server
+      run: ab -n 10000 -c 100 127.0.0.1:8080/httptest/wikipedia_russia.html
